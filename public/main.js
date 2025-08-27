@@ -15,7 +15,7 @@ function createWindow() {
     frame: false, // Frameless for widget-like appearance
     transparent: true,
     alwaysOnTop: false,
-    skipTaskbar: false,
+    skipTaskbar: true,
     resizable: true,
     movable: true,
     webPreferences: {
@@ -36,18 +36,18 @@ function createWindow() {
 
   mainWindow.loadURL(startUrl);
 
-  // Open DevTools in development
-  if (isDev) {
-    mainWindow.webContents.openDevTools();
-  }
+  // DevTools disabled by default. Uncomment to enable during development
+  // if (isDev) {
+  //   mainWindow.webContents.openDevTools();
+  // }
 
   // Handle window closed
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
 
-  // Set up the menu
-  createMenu();
+  // Hide the default application menu for a true widget feel
+  Menu.setApplicationMenu(null);
 }
 
 function createMenu() {
