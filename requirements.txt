@@ -1,0 +1,12 @@
+# Death Clock - Countdown Timer Requirements
+# No external dependencies required - uses only Python standard library
+
+# Python 3.7+ required for:
+# - tkinter (GUI framework)
+# - datetime (date/time handling)
+# - threading (background countdown)
+# - math (trigonometric calculations)
+# - time (sleep functionality)
+
+# To run the application:
+# python countdown_clock.py
