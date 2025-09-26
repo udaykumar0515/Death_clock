@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Death Clock - Countdown Timer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #000;
+            color: #fff;
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .title {
+            font-size: 2.5rem;
+            color: #ff0000;
+            margin-bottom: 30px;
+            text-shadow: 0 0 10px #ff0000;
+        }
+
+        .controls {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+            align-items: center;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        label {
+            font-size: 1.2rem;
+            color: #fff;
+        }
+
+        input[type="number"] {
+            padding: 10px;
+            font-size: 1.1rem;
+            border: 2px solid #ff0000;
+            background: #000;
+            color: #fff;
+            border-radius: 5px;
+            width: 100px;
+            text-align: center;
+        }
+
+        input[type="number"]:focus {
+            outline: none;
+            box-shadow: 0 0 10px #ff0000;
+        }
+
+        .start-btn {
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            background: #ff0000;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .start-btn:hover {
+            background: #cc0000;
+            box-shadow: 0 0 15px #ff0000;
+        }
+
+        .start-btn:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+
+        #canvas {
+            border: 2px solid #333;
+            border-radius: 50%;
+            background: radial-gradient(circle, #1a1a1a 0%, #000 100%);
+            box-shadow: 0 0 30px rgba(255, 0, 0, 0.3);
+        }
+
+        .status {
+            margin-top: 20px;
+            font-size: 1.1rem;
+            color: #ffd700;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <h1 class="title">⏰ DEATH CLOCK ⏰</h1>
+    
+    <div class="controls">
+        <div class="control-group">
+            <label for="year">Year</label>
+            <input type="number" id="year" min="2024" max="2100" value="2035">
+        </div>
+        
+        <div class="control-group">
+            <label for="month">Month</label>
+            <input type="number" id="month" min="1" max="12" value="6">
+        </div>
+        
+        <button class="start-btn" onclick="startCountdown()">START</button>
+    </div>
+    
+    <canvas id="canvas" width="500" height="500"></canvas>
+    
+    <div class="status" id="status">Select a future date and click START</div>
+
+    <script>
+        class DeathClock {
+            constructor() {
+                this.canvas = document.getElementById('canvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.centerX = this.canvas.width / 2;
+                this.centerY = this.canvas.height / 2;
+                this.isRunning = false;
+                this.targetDate = null;
+                this.animationId = null;
+                
+                // Define circles (years in center, seconds outside) - matching the image
+                this.circles = [
+                    { radius: 50, color: '#8B5CF6', label: 'YEARS', max: 100, numbers: 100, ringColor: '#4C1D95' },
+                    { radius: 80, color: '#10B981', label: 'DAYS', max: 31, numbers: 31, ringColor: '#065F46' },
+                    { radius: 110, color: '#3B82F6', label: 'MONTHS', max: 12, numbers: 12, ringColor: '#1E40AF' },
+                    { radius: 140, color: '#6B7280', label: 'HOURS', max: 24, numbers: 24, ringColor: '#374151' },
+                    { radius: 170, color: '#D97706', label: 'MINUTES', max: 60, numbers: 60, ringColor: '#92400E' },
+                    { radius: 200, color: '#000000', label: 'SECONDS', max: 60, numbers: 60, ringColor: '#1F2937' }
+                ];
+            }
+            
+            startCountdown() {
+                const year = parseInt(document.getElementById('year').value);
+                const month = parseInt(document.getElementById('month').value);
+                
+                this.targetDate = new Date(year, month - 1, 1, 0, 0, 0);
+                
+                if (this.targetDate <= new Date()) {
+                    alert('Please select a future date!');
+                    return;
+                }
+                
+                this.isRunning = true;
+                document.querySelector('.start-btn').disabled = true;
+                document.getElementById('status').textContent = 'Countdown Active!';
+                
+                this.animate();
+            }
+            
+            animate() {
+                if (!this.isRunning) return;
+                
+                const now = new Date();
+                if (now >= this.targetDate) {
+                    this.finishCountdown();
+                    return;
+                }
+                
+                const timeDiff = this.targetDate - now;
+                const timeValues = this.calculateTimeValues(timeDiff);
+                
+                this.draw(timeValues);
+                
+                this.animationId = requestAnimationFrame(() => this.animate());
+            }
+            
+            calculateTimeValues(timeDiff) {
+                const totalSeconds = Math.floor(timeDiff / 1000);
+                const years = Math.floor(totalSeconds / (365 * 24 * 3600));
+                const remainingSeconds = totalSeconds % (365 * 24 * 3600);
+                const months = Math.floor(remainingSeconds / (30 * 24 * 3600));
+                const remainingSeconds2 = remainingSeconds % (30 * 24 * 3600);
+                const days = Math.floor(remainingSeconds2 / (24 * 3600));
+                const remainingSeconds3 = remainingSeconds2 % (24 * 3600);
+                const hours = Math.floor(remainingSeconds3 / 3600);
+                const remainingSeconds4 = remainingSeconds3 % 3600;
+                const minutes = Math.floor(remainingSeconds4 / 60);
+                const seconds = remainingSeconds4 % 60;
+                
+                return [years, months, days, hours, minutes, seconds];
+            }
+            
+            draw(timeValues) {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                // Draw each circle with rotating rings
+                this.circles.forEach((circle, index) => {
+                    const value = timeValues[index];
+                    
+                    // Save the current context state
+                    this.ctx.save();
+                    
+                    // Move to center and rotate the entire ring
+                    this.ctx.translate(this.centerX, this.centerY);
+                    const rotationAngle = -(value / circle.numbers) * 2 * Math.PI; // Negative for counter-clockwise
+                    this.ctx.rotate(rotationAngle);
+                    
+                    // Draw ring background with metallic effect
+                    this.ctx.strokeStyle = circle.ringColor;
+                    this.ctx.lineWidth = 8;
+                    this.ctx.beginPath();
+                    this.ctx.arc(0, 0, circle.radius, 0, 2 * Math.PI);
+                    this.ctx.stroke();
+                    
+                    // Draw inner ring highlight
+                    this.ctx.strokeStyle = circle.color;
+                    this.ctx.lineWidth = 2;
+                    this.ctx.beginPath();
+                    this.ctx.arc(0, 0, circle.radius - 2, 0, 2 * Math.PI);
+                    this.ctx.stroke();
+                    
+                    // Draw numbers around the circle (they rotate with the ring)
+                    for (let i = 0; i < circle.numbers; i++) {
+                        const angle = (i / circle.numbers) * 2 * Math.PI - Math.PI / 2; // Start from top
+                        const numberRadius = circle.radius - 15;
+                        const x = numberRadius * Math.cos(angle);
+                        const y = numberRadius * Math.sin(angle);
+                        
+                        // Draw number with better visibility
+                        this.ctx.fillStyle = '#ffffff';
+                        this.ctx.font = 'bold 9px Arial';
+                        this.ctx.textAlign = 'center';
+                        this.ctx.textBaseline = 'middle';
+                        this.ctx.fillText(i.toString(), x, y);
+                        
+                        // Add small tick marks for better readability
+                        const tickRadius = circle.radius - 8;
+                        const tickX = tickRadius * Math.cos(angle);
+                        const tickY = tickRadius * Math.sin(angle);
+                        const tickX2 = (tickRadius - 5) * Math.cos(angle);
+                        const tickY2 = (tickRadius - 5) * Math.sin(angle);
+                        
+                        this.ctx.strokeStyle = '#ffffff';
+                        this.ctx.lineWidth = 1;
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(tickX, tickY);
+                        this.ctx.lineTo(tickX2, tickY2);
+                        this.ctx.stroke();
+                    }
+                    
+                    // Restore the context state
+                    this.ctx.restore();
+                    
+                    // Draw label above the ring (static, doesn't rotate)
+                    const labelX = this.centerX;
+                    const labelY = this.centerY - circle.radius - 25;
+                    this.ctx.fillStyle = circle.color;
+                    this.ctx.font = 'bold 12px Arial';
+                    this.ctx.textAlign = 'center';
+                    this.ctx.textBaseline = 'middle';
+                    this.ctx.fillText(circle.label, labelX, labelY);
+                    
+                    // Draw current value below the label
+                    const valueX = this.centerX;
+                    const valueY = this.centerY - circle.radius - 10;
+                    this.ctx.fillStyle = '#ffffff';
+                    this.ctx.font = 'bold 14px Arial';
+                    this.ctx.textAlign = 'center';
+                    this.ctx.textBaseline = 'middle';
+                    this.ctx.fillText(value.toString(), valueX, valueY);
+                });
+                
+                // Draw traditional clock hands in center
+                this.drawClockHands();
+                
+                // Draw center circle with current time
+                this.ctx.fillStyle = '#000000';
+                this.ctx.beginPath();
+                this.ctx.arc(this.centerX, this.centerY, 35, 0, 2 * Math.PI);
+                this.ctx.fill();
+                
+                this.ctx.strokeStyle = '#ffffff';
+                this.ctx.lineWidth = 2;
+                this.ctx.beginPath();
+                this.ctx.arc(this.centerX, this.centerY, 35, 0, 2 * Math.PI);
+                this.ctx.stroke();
+                
+                // Update status
+                const [years, months, days, hours, minutes, seconds] = timeValues;
+                document.getElementById('status').textContent = 
+                    `Time Remaining: ${years}y ${months}m ${days}d ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }
+            
+            drawClockHands() {
+                const now = new Date();
+                const currentSeconds = now.getSeconds();
+                const currentMinutes = now.getMinutes();
+                const currentHours = now.getHours() % 12;
+                
+                // Draw hour hand (red)
+                const hourAngle = (currentHours / 12) * 2 * Math.PI - Math.PI / 2;
+                this.ctx.strokeStyle = '#ff0000';
+                this.ctx.lineWidth = 3;
+                this.ctx.beginPath();
+                this.ctx.moveTo(this.centerX, this.centerY);
+                this.ctx.lineTo(
+                    this.centerX + 15 * Math.cos(hourAngle),
+                    this.centerY + 15 * Math.sin(hourAngle)
+                );
+                this.ctx.stroke();
+                
+                // Draw minute hand (gold)
+                const minuteAngle = (currentMinutes / 60) * 2 * Math.PI - Math.PI / 2;
+                this.ctx.strokeStyle = '#FFD700';
+                this.ctx.lineWidth = 2;
+                this.ctx.beginPath();
+                this.ctx.moveTo(this.centerX, this.centerY);
+                this.ctx.lineTo(
+                    this.centerX + 25 * Math.cos(minuteAngle),
+                    this.centerY + 25 * Math.sin(minuteAngle)
+                );
+                this.ctx.stroke();
+                
+                // Draw second hand (gold, thin)
+                const secondAngle = (currentSeconds / 60) * 2 * Math.PI - Math.PI / 2;
+                this.ctx.strokeStyle = '#FFD700';
+                this.ctx.lineWidth = 1;
+                this.ctx.beginPath();
+                this.ctx.moveTo(this.centerX, this.centerY);
+                this.ctx.lineTo(
+                    this.centerX + 30 * Math.cos(secondAngle),
+                    this.centerY + 30 * Math.sin(secondAngle)
+                );
+                this.ctx.stroke();
+                
+                // Draw center dot
+                this.ctx.fillStyle = '#fff';
+                this.ctx.beginPath();
+                this.ctx.arc(this.centerX, this.centerY, 3, 0, 2 * Math.PI);
+                this.ctx.fill();
+            }
+            
+            finishCountdown() {
+                this.isRunning = false;
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                this.ctx.fillStyle = '#ff0000';
+                this.ctx.font = 'bold 24px Arial';
+                this.ctx.textAlign = 'center';
+                this.ctx.textBaseline = 'middle';
+                this.ctx.fillText('⏰ TIME\'S UP! ⏰', this.centerX, this.centerY);
+                
+                document.getElementById('status').textContent = 'Countdown Finished!';
+                document.querySelector('.start-btn').disabled = false;
+                alert('Countdown Complete!');
+            }
+        }
+        
+        // Initialize the clock
+        const deathClock = new DeathClock();
+        
+        function startCountdown() {
+            deathClock.startCountdown();
+        }
+    </script>
+</body>
+</html>

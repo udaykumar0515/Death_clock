@@ -126,76 +126,81 @@ class CountdownClock:
         
         center_x, center_y = 250, 250
         
-        # Define concentric circles with different radii
+        # Define concentric circles with different radii (reversed order)
         circles = [
-            {'radius': 200, 'color': '#ff0000', 'label': 'Years', 'value': years, 'max': 100},
-            {'radius': 170, 'color': '#ff6600', 'label': 'Months', 'value': months, 'max': 12},
-            {'radius': 140, 'color': '#ffff00', 'label': 'Days', 'value': days, 'max': 30},
-            {'radius': 110, 'color': '#00ff00', 'label': 'Hours', 'value': hours, 'max': 24},
-            {'radius': 80, 'color': '#00ffff', 'label': 'Minutes', 'value': minutes, 'max': 60},
-            {'radius': 50, 'color': '#ff00ff', 'label': 'Seconds', 'value': seconds, 'max': 60}
+            {'radius': 50, 'color': '#ff0000', 'label': 'Years', 'value': years, 'max': 100, 'numbers': 100},
+            {'radius': 80, 'color': '#ff6600', 'label': 'Months', 'value': months, 'max': 12, 'numbers': 12},
+            {'radius': 110, 'color': '#ffff00', 'label': 'Days', 'value': days, 'max': 30, 'numbers': 30},
+            {'radius': 140, 'color': '#00ff00', 'label': 'Hours', 'value': hours, 'max': 24, 'numbers': 24},
+            {'radius': 170, 'color': '#00ffff', 'label': 'Minutes', 'value': minutes, 'max': 60, 'numbers': 60},
+            {'radius': 200, 'color': '#ff00ff', 'label': 'Seconds', 'value': seconds, 'max': 60, 'numbers': 60}
         ]
         
-        # Draw concentric circles
+        # Draw concentric circles with rotating numbers
         for circle in circles:
             radius = circle['radius']
             color = circle['color']
             value = circle['value']
             max_val = circle['max']
             label = circle['label']
+            numbers = circle['numbers']
             
             # Draw circle outline
             self.canvas.create_oval(
                 center_x - radius, center_y - radius,
                 center_x + radius, center_y + radius,
-                outline=color, width=3
+                outline=color, width=2
             )
             
-            # Calculate hand angle (0 degrees = 12 o'clock position)
-            if max_val > 0:
-                angle = (value / max_val) * 360 - 90  # -90 to start from top
-            else:
-                angle = -90
+            # Draw numbers around the circle
+            for i in range(numbers):
+                # Calculate angle for this number
+                angle = (i / numbers) * 360 - 90  # -90 to start from top
+                angle_rad = math.radians(angle)
+                
+                # Position for number
+                number_radius = radius - 15
+                number_x = center_x + number_radius * math.cos(angle_rad)
+                number_y = center_y + number_radius * math.sin(angle_rad)
+                
+                # Highlight current value
+                if i == value:
+                    # Draw highlighted number with background
+                    self.canvas.create_oval(
+                        number_x - 8, number_y - 8,
+                        number_x + 8, number_y + 8,
+                        fill=color, outline=color
+                    )
+                    self.canvas.create_text(
+                        number_x, number_y,
+                        text=str(i),
+                        font=("Arial", 8, "bold"),
+                        fill='white'
+                    )
+                else:
+                    # Draw normal number
+                    self.canvas.create_text(
+                        number_x, number_y,
+                        text=str(i),
+                        font=("Arial", 6),
+                        fill=color
+                    )
             
-            # Convert to radians
-            angle_rad = math.radians(angle)
-            
-            # Draw clock hand
-            hand_length = radius - 10
-            end_x = center_x + hand_length * math.cos(angle_rad)
-            end_y = center_y + hand_length * math.sin(angle_rad)
-            
-            self.canvas.create_line(
-                center_x, center_y, end_x, end_y,
-                fill=color, width=4
-            )
-            
-            # Draw value text
-            text_x = center_x + (radius + 20) * math.cos(angle_rad)
-            text_y = center_y + (radius + 20) * math.sin(angle_rad)
-            
-            self.canvas.create_text(
-                text_x, text_y,
-                text=str(value),
-                font=("Arial", 12, "bold"),
-                fill=color
-            )
-            
-            # Draw label
-            label_x = center_x + (radius + 40) * math.cos(angle_rad)
-            label_y = center_y + (radius + 40) * math.sin(angle_rad)
+            # Draw label outside the circle
+            label_x = center_x + (radius + 25) * math.cos(math.radians(0))  # At 3 o'clock position
+            label_y = center_y + (radius + 25) * math.sin(math.radians(0))
             
             self.canvas.create_text(
                 label_x, label_y,
                 text=label,
-                font=("Arial", 8),
-                fill='white'
+                font=("Arial", 8, "bold"),
+                fill=color
             )
         
         # Draw center dot
         self.canvas.create_oval(
-            center_x - 5, center_y - 5,
-            center_x + 5, center_y + 5,
+            center_x - 3, center_y - 3,
+            center_x + 3, center_y + 3,
             fill='white', outline='white'
         )
         
